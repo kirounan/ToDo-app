@@ -1,7 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:p2_todo/home/my_theme.dart';
+import 'package:p2_todo/firebase_utils.dart';
+import 'package:p2_todo/my_theme.dart';
 
-class AddTaskBottomSheet extends StatelessWidget {
+import '../../model/task.dart';
+
+class AddTaskBottomSheet extends StatefulWidget {
+  @override
+  State<AddTaskBottomSheet> createState() => _AddTaskBottomSheetState();
+}
+
+class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
+  String title = '';
+
+  String description = '';
+  DateTime SelectedDate = DateTime.now();
+  var formKey = GlobalKey<FormState>();
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -14,11 +28,21 @@ class AddTaskBottomSheet extends StatelessWidget {
             style: Theme.of(context).primaryTextTheme.subtitle1,
           ),
           Form(
+            key:formKey ,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               TextFormField(
                 decoration: InputDecoration(hintText: 'Enter task title'),
+                onChanged: (text){
+                  title=text;
+                },
+                validator: (text){
+                  if(text==null||text.isEmpty){
+                    return 'Please enter task title'; // invalid
+                  }
+                  return null; // valid
+                },
               ),
               SizedBox(
                 height: 20,
@@ -27,8 +51,18 @@ class AddTaskBottomSheet extends StatelessWidget {
                 decoration: InputDecoration(
                   hintText: 'task Description',
                 ),
-                maxLines: 4,
-                minLines: 4,
+                validator: (text){
+                  if(text==null||text.isEmpty){
+                    return 'Please enter task description'; // invalid
+                  }
+                  return null; // valid
+                },
+
+                onChanged: (text){
+                  description=text;
+                },
+                maxLines: 2,
+                minLines: 2,
               ),
               SizedBox(
                 height: 20,
@@ -40,10 +74,10 @@ class AddTaskBottomSheet extends StatelessWidget {
               ),
               InkWell(
                 onTap: (){
-
+                  ChooseDate();
                 },
                 child: Text(
-                  '27/1/2022',
+                  '${SelectedDate.day}/${SelectedDate.month}/${SelectedDate.year}',
                   style: Theme.of(context).primaryTextTheme.subtitle2,
                   textAlign: TextAlign.center,
                 ),
@@ -52,7 +86,7 @@ class AddTaskBottomSheet extends StatelessWidget {
           )),
           InkWell(
             onTap: (){
-
+                addTask();
             },
             child: Container(
 
@@ -75,4 +109,24 @@ class AddTaskBottomSheet extends StatelessWidget {
       ),
     );
   }
+
+  void ChooseDate() async{
+   var chosenDate = await showDatePicker(context: context, initialDate: SelectedDate, firstDate: DateTime.now(), lastDate: DateTime.now().add(Duration(days: 356)));
+ if(chosenDate !=null){
+   SelectedDate = chosenDate;
+   setState(() {
+   });
+ }
+  }
+
+  void addTask() {
+    if(formKey.currentState?.validate()==true){
+      Task task= Task(title: title, description: description, date: SelectedDate.millisecondsSinceEpoch);
+    addTaskToFireStore(task).timeout(Duration(milliseconds: 500),onTimeout: (){
+      print("success");
+      Navigator.pop(context);
+    });
+    }
+  }
 }
+
